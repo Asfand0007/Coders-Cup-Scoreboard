@@ -11,11 +11,13 @@ const updateBuffers = async () => {
     console.log('Scraping data...');
     backBuffer = await getRanking(); // getting data
     if (backBuffer) {
-        console.log(backBuffer);
-        // Swaping buffers after scraping is complete
+        console.log('Data scraped successfully:', backBuffer);
+        // Swapping buffers after scraping is complete
         mainBuffer = backBuffer;
         backBuffer = null;
         console.log('Buffers swapped. Main buffer updated.');
+    } else {
+        console.log('Failed to scrape data.');
     }
 };
 
@@ -29,10 +31,10 @@ app.get('/api/ranking', (req, res) => {
     if (mainBuffer) {
         res.status(200).json(mainBuffer);
     } else {
+        console.log('Data not yet available for /api/ranking');
         res.status(503).json({ message: 'Data is not yet available.' });
     }
 });
-
 
 app.get('/', (req, res) => {
     res.send('Scoreboard');
