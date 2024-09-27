@@ -3,14 +3,15 @@ const { getRanking } = require('./controllers.js');
 const express = require('express');
 const app = express();
 
-let mainBuffer = null; 
-let backBuffer = null; 
+let mainBuffer = null;
+let backBuffer = null;
 
 // Scraping data initially 
 const updateBuffers = async () => {
     console.log('Scraping data...');
     backBuffer = await getRanking(); // getting data
     if (backBuffer) {
+        console.log(backBuffer);
         // Swaping buffers after scraping is complete
         mainBuffer = backBuffer;
         backBuffer = null;
