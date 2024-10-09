@@ -1,31 +1,35 @@
 const puppeteer = require('puppeteer');
 const chromium = require('@sparticuz/chromium');
 const puppeteerCore = require('puppeteer-core');
+const userAgent = require('user-agents');
 
 const URL = 'https://vjudge.net/contest/587923#rank';
-
 const getData = async () => {
     let browser = null;
-
-    if (process.env.NODE_ENV === 'development') {
-        console.log('Running in development mode with Puppeteer');
+    const viewportSize = { width: 1920, height: 1080 };
+    try {
         browser = await puppeteer.launch({
-            args: ['--no-sandbox', '--disable-setuid-sandbox'],
-            headless: true,
+            headless: "new",
+            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+            defaultViewport: viewportSize
         });
-    } else if (process.env.NODE_ENV === 'production') {
-        console.log('Running in production mode with Puppeteer-Core and Chromium');
-        browser = await puppeteerCore.launch({
-            args: chromium.args,
-            defaultViewport: chromium.defaultViewport,
-            executablePath: await chromium.executablePath(),
-            headless: chromium.headless,
-        });
+    } catch (error) {
+        console.error('Error:', error);
     }
 
     const page = await browser.newPage();
-    await page.goto(URL);
-    await page.waitForSelector('#contest-rank-table');
+    await page.setUserAgent(new userAgent().toString());
+    await page.goto(URL, { waitUntil: 'networkidle0' });  // Wait for network to be idle
+
+    try {
+        await page.waitForSelector('#contest-rank-table', { timeout: 60000 });  // Wait up to 60 seconds
+    } catch (e) {
+        console.error('Table not found:', e);
+        await page.screenshot({ path: 'error_screenshot.png' });
+        console.log(await page.content());
+        await browser.close();
+        return { error: 'Table not found' };
+    }
 
     const data = await page.evaluate(() => {
         const rows = document.querySelectorAll('#contest-rank-table tbody tr');
@@ -67,6 +71,8 @@ const getData = async () => {
     return data;
 };
 
+
+ 
 const getRanking = async () => {
     try {
         const data = await getData();
